@@ -16,7 +16,8 @@
 */
 void main(void) {
 	disable_ints();
-	write_string("Start working\n");
+	set_div_to_write();
+	write_string("Start the programm\n");
 	init_all();
 	write_string("Generate interruption\n");
 	

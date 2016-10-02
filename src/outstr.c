@@ -19,7 +19,7 @@ int get_permission_to_write() {
 	return (in8(FIRST + 5) & (1 << 5));
 }
 
-void write_str(char *str){
+void write_string(char *str){
 	char *i = str;
 	while(*i != 0) {
 		while (get_permission_to_write() == 0);
@@ -27,12 +27,6 @@ void write_str(char *str){
 		i++;
 	}
 }
-
-void write_string(char *str) {
-	//disable_ints();
-	set_div_to_write();
-	write_str(str);
-}	
 
 void write_number(uint8_t num) {
     char word[9];

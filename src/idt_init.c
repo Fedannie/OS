@@ -8,8 +8,8 @@
 #define SLAVE_COMAND_PORT 0xa0
 #define SLAVE_DATA_PORT 0xa1
 
-uint8_t master_mask = 0;
-uint8_t slave_mask = 0;
+uint8_t master_mask;
+uint8_t slave_mask;
 
 extern uint64_t handlers[];
 static struct IDT_rec idt_table[TABLE_SIZE];
