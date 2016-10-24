@@ -1,17 +1,21 @@
 #include <memory.h>
 
 #define MB_HEADER_MAGIC	0x1BADB002
-#define MB_HEADER_FLAGS	((1 << 16) | (1 << 1))
+#define MB_HEADER_FLAGS	((1 << 16) | (1 << 1) | (1 << 6))
 #define MB_HEADER_CKSUM	-(MB_HEADER_MAGIC + MB_HEADER_FLAGS)
 
 	.section .bootstrap, "ax"
 	.code32
 	.global start32
 	.extern main
+	
+	.global multiboot_info
+	multiboot_info: .int
 
 
 	.align 16
 start32:
+	mov %ebx, multiboot_info
 	jmp 1f
 
 

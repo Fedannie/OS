@@ -1,15 +1,15 @@
 #include "desc.h"
 #include "memory.h"
-#include "outstr.h"
 #include "ioport.h"
+#include "print.h"
 
 #define MASTER_COMAND_PORT 0x20 
 #define MASTER_DATA_PORT 0x21
 #define SLAVE_COMAND_PORT 0xa0
 #define SLAVE_DATA_PORT 0xa1
 
-uint8_t master_mask;
-uint8_t slave_mask;
+uint8_t master_mask = 0;
+uint8_t slave_mask = 0;
 
 extern uint64_t handlers[];
 static struct IDT_rec idt_table[TABLE_SIZE];
@@ -92,31 +92,25 @@ void set_controller(){
 }
 
 void init_all() {
-	write_string("Start initing\n");
 	set_table();
-	write_string("Table is ready\n");
 	struct desc_table_ptr ptr = {sizeof(idt_table) - 1, (uint64_t) idt_table};
 	write_idtr(&ptr);
-	write_string("Ptr is ready\n");
 	set_controller();
-	write_string("Controller is ready\n");
 }
 
 void interruption(uint8_t num) {
-	write_string("Interrupt number ");
-	write_number(num);
-	write_string("\n");
+	printf("Interrupt number %lx\n, num");
 	if (num == FIRST_REC_START) {
-		write_string("Timer works! We've got it's interruption.\n");
+		printf("Timer works! We've got it's interruption.\n");
 		master_EOI();
 	} else if (num < FIRST_REC_START) {
-		write_string("System interrupt\n");
+		printf("System interrupt\n");
 	} else if (num >= FIRST_REC_START && num < FIRST_REC_END) {
 		master_EOI();
-		write_string("Master int\n");
+		printf("Master int\n");
 	} else if (num >= SECOND_REC_START && num < SECOND_REC_END){
 		master_EOI();
 		slave_EOI();
-		write_string("Slave int \n");
+		printf("Slave int \n");
 	}
 }

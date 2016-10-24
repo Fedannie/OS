@@ -5,6 +5,5 @@
 #define PAGE_SIZE	0x1000
 #define KERNEL_CS	0x08
 #define KERNEL_DS	0x10
-#define FIRST 0x3f8
 
 #endif /*__MEMORY_H__*/
