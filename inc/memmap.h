@@ -16,21 +16,16 @@ struct extra_mmap_entry {
 	uint32_t type;
 	uint64_t begin;
 	uint64_t end;
-};
+}__attribute__((packed));
 
 #define MAX_MMAP_LENGTH 100
 #define KT 0
 #define FT 1
 #define RT 2
 
-typedef struct map_entry map_entry
-typedef struct extra_mmap_entry extra_mmap_entry
-typedef struct extra_mmap_entry* extra_entry_ptr
-typedef struct map_entry* map_entry_ptr
-
-void print_mmap();
-void sort_mmap();
-void read_mmap(const uint32_t);
-extra_entry_ptr comp_last_with_kernel(extra_entry_ptr, map_entry_ptr);
+void print_mmap(struct extra_mmap_entry *, uint32_t);
+void sort_mmap(struct extra_mmap_entry *, uint32_t);
+uint32_t read_mmap(struct extra_mmap_entry *, const uint32_t);
+struct extra_mmap_entry *comp_last_with_kernel(struct extra_mmap_entry *, struct map_entry *);
 
 #endif /* __MEMMAP_H__ */

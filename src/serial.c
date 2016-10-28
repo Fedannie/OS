@@ -1,24 +1,33 @@
 #include <serial.h>
+//#include "utils.h"
 
-void send_char(uint8_t c) {
-	while (!(in8(SERIAL_ADDR + 5) & bit(5)));
-	uint8_t settings = in8(SERIAL_ADDR + 3);
-	settings &= ~((uint8_t)bit(7));
-	out8(SERIAL_ADDR + 3, settings);
-	out8(SERIAL_ADDR, c);
+void init_serial_port(void)
+{
+    /* set speed */
+    out8(SERIAL_PORT(3), BIT(7));
+    out8(SERIAL_PORT(0), 1);
+    out8(SERIAL_PORT(1), 0);
+
+    /* set other settings */
+    out8(SERIAL_PORT(3), BIT(0) | BIT(1));
+
+    /* set polling */
+    out8(SERIAL_PORT(1), 0);
 }
 
-void send_string(char *s) {
-	while (*s) {
-		send_char(*s);
-		s++;
-	}
+void putc(char c)
+{
+    out8(SERIAL_PORT(0), c);
+    while (!(in8(SERIAL_PORT(5)) & BIT(5)));
 }
 
-void setup_serial() {
-	out8(SERIAL_ADDR + 1, 0);
-	out8(SERIAL_ADDR + 3, bit(7));
-	out8(SERIAL_ADDR, bit(2));
-	out8(SERIAL_ADDR + 1, 0);
-	out8(SERIAL_ADDR + 3, bit(0) | bit(1));
+// unlike standart puts this implementation 
+// doesn't put a newline character in the end
+void puts(const char *s)
+{
+    while (*s)
+    {
+        putc(*s);
+        s++;
+    }
 }

@@ -2,15 +2,15 @@
 #define __SERIAL_H__
 
 #include <ioport.h>
+#include <stdint.h>
 
-#define SERIAL_ADDR 0x3f8
+#define BIT(n) (1 << (n))
+#define SERIAL_PORT(n) (0x3f8 + n)
 
-#define bit(x) 1 << x
+void init_serial_port(void);
 
-void setup_serial();
+void putc(char c);
 
-void send_string(char*);
-
-void send_char(uint8_t);
+void puts(const char* s);
 
 #endif /* __SERIAL_H__ */
