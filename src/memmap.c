@@ -32,15 +32,15 @@ struct extra_mmap_entry *comp_last_with_kernel(struct extra_mmap_entry *entry, s
 			entry = set(entry, p->type, p->addr, p->addr + p->length);
 		} else if (kernel.end >= p->addr + p->length) {
 			entry = set(entry, p->type, p->addr, kernel.begin);
-			entry = set(entry, RT, kernel.begin, p->addr + p->length);
 		} else {
 			entry = set(entry, p->type, p->addr, kernel.begin);
+			entry = set(entry, p->type, kernel.end + 1, p->addr + p->length);
 		}
 	} else {
 		if (kernel.end >= p->addr + p->length) {
 			return entry;
-		} else if (kernel.end > p->addr) {
-			entry = set(entry, p->type, kernel.end, p->addr + p->length);
+		} else if (kernel.end >= p->addr) {
+			entry = set(entry, p->type, kernel.end + 1, p->addr + p->length);
 		} else {
 			entry = set(entry, p->type, p->addr, p->addr + p->length);
 		}
