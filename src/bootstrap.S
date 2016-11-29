@@ -1,21 +1,17 @@
 #include <memory.h>
 
 #define MB_HEADER_MAGIC	0x1BADB002
-#define MB_HEADER_FLAGS	((1 << 16) | (1 << 1) | (1 << 6))
+#define MB_HEADER_FLAGS	((1 << 16) | (1 << 1))
 #define MB_HEADER_CKSUM	-(MB_HEADER_MAGIC + MB_HEADER_FLAGS)
 
 	.section .bootstrap, "ax"
 	.code32
 	.global start32
 	.extern main
-	
-	.global multiboot_info
-	multiboot_info: .int
 
 
 	.align 16
 start32:
-	mov %ebx, multiboot_info
 	jmp 1f
 
 
@@ -57,7 +53,14 @@ idt_ptr:
 	.space 0x100
 stack_top:
 
+	.global multiboot_info
+
+multiboot_info:
+	.long 0
+
 1:
+	movl %ebx, multiboot_info	
+
 	movl $stack_top, %esp
 	pushl %eax
 	call videomem_clrscr
@@ -139,6 +142,7 @@ setup_mapping:
 	movl $(bootstrap_pml4 - VIRTUAL_BASE), %edi
 	movl $(bootstrap_pml3 - VIRTUAL_BASE + PTE_PRESENT + PTE_WRITE), %eax
 	movl %eax, (%edi)
+	movl %eax, 2048(%edi)
 	movl %eax, 4088(%edi)
 
 	movl %cr4, %eax

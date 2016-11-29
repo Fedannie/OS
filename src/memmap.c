@@ -1,85 +1,80 @@
-#include <memmap.h>
-#define KT 0
-#define FT 1
-#define RT 2
-extern char text_phys_begin[];
-extern char bss_phys_end[];
-struct extra_mmap_entry kernel;
+#include<memmap.h>
+
+#define MEMMAP_MAX_SIZE 100	
+
+my_mem_entry_t memory_map[MEMMAP_MAX_SIZE];
+uint64_t memory_map_size = 0;
+
+extern uint8_t text_phys_begin[];
+extern uint8_t bss_phys_end[];
+
+void add_my_entry(uint64_t base_addr, uint64_t length, uint32_t type) {
+	my_mem_entry_t* entry = memory_map + memory_map_size;
+	memory_map_size++;
+
+	entry->begin  = base_addr;
+	entry->end    = base_addr + length - 1;
+	entry->length = length;
+	entry->type   = type;
+}
+
+extern uint32_t multiboot_info;
+
+void initialize_memory_map() {
+
+	uint64_t multiboot_info64 = (uint64_t)multiboot_info;
+
+	my_mem_entry_t* kernel_my_entry = memory_map + memory_map_size;
+	memory_map_size++;
+
+	kernel_my_entry->begin  = (uint64_t)text_phys_begin;
+	kernel_my_entry->end    = (uint64_t)bss_phys_end;
+	kernel_my_entry->length = (uint64_t)kernel_my_entry->end - (uint64_t)kernel_my_entry->begin + 1;
+	kernel_my_entry->type   = 2;
+
+    uint32_t memmap_length = *((uint32_t*)multiboot_info64 + 11);
+ 	uint64_t memmap_base_addr = (uint64_t)(*(uint64_t*)(multiboot_info64 + 48));
 	
-void sort_mmap(struct extra_mmap_entry *memory_map, uint32_t map_length) {
-	struct extra_mmap_entry *map = memory_map;
-	for (uint32_t i = 0; i < map_length; i++) {
-		for (uint32_t j = i + 1; j < map_length; j++) {
-			if (map[i].begin >= map[j].begin) {
-				struct extra_mmap_entry tmp = map[i];
-				map[i] = map[j];
-				map[j] = tmp;
-			}
+	for (uint64_t memmap_ptr = memmap_base_addr; memmap_ptr < memmap_base_addr + memmap_length; ) {
+		mem_entry_t* entry = (mem_entry_t*)memmap_ptr;
+		memmap_ptr += entry->size + sizeof(entry->size);
+
+		uint64_t left  = entry->base_addr;
+		uint64_t right = entry->base_addr + entry->length - 1;
+		
+		if (right < kernel_my_entry->begin || left > kernel_my_entry->end) {
+			add_my_entry(left, entry->length, entry->type);
+		} else if (left < kernel_my_entry->begin && kernel_my_entry->end < right) {
+			add_my_entry(left, kernel_my_entry->begin - left, entry->type);	
+		 	add_my_entry(kernel_my_entry->end + 1, right - kernel_my_entry->end, entry->type);	
+		} else if (left < kernel_my_entry->begin) {
+			add_my_entry(left, kernel_my_entry->begin - left, entry->type);	
+		} else if (right > kernel_my_entry->end) {
+			add_my_entry(kernel_my_entry->end + 1, right - kernel_my_entry->end, entry->type);	
+		}
+
+	}
+}
+
+void print(my_mem_entry_t entry, uint64_t num) {
+	printf("memory entry #%lli: 0x%llx-0x%llx(%lli bytes), type = %d\n", 
+		num, entry.begin, entry.end, entry.length, entry.type);
+}
+
+uint8_t correct(my_mem_entry_t entry) {
+	if (entry.begin <= entry.end) return 1;
+	return 0;
+}
+
+void print_memory_map() {
+	printf("_________Memory map_________ \n");
+
+	int num = 0;
+	for (uint64_t i = 0; i < memory_map_size; i++) {
+		if (correct(memory_map[i])) {
+			print(memory_map[i], num++);
 		}
 	}
 }
 
-struct extra_mmap_entry *set(struct extra_mmap_entry *entry, uint32_t new_type, uint64_t new_begin, uint64_t new_end) {
-	entry->type = new_type;
-	entry->begin = new_begin;
-	entry->end = new_end - 1;
-	return ++entry;
-}
 
-struct extra_mmap_entry *comp_last_with_kernel(struct extra_mmap_entry *entry, struct map_entry *p) {
-	if (kernel.begin > p->addr) {
-		if (kernel.begin >= p->addr + p->length) {
-			entry = set(entry, p->type, p->addr, p->addr + p->length);
-		} else if (kernel.end >= p->addr + p->length) {
-			entry = set(entry, p->type, p->addr, kernel.begin);
-		} else {
-			entry = set(entry, p->type, p->addr, kernel.begin);
-			entry = set(entry, p->type, kernel.end + 1, p->addr + p->length);
-		}
-	} else {
-		if (kernel.end >= p->addr + p->length) {
-			return entry;
-		} else if (kernel.end >= p->addr) {
-			entry = set(entry, p->type, kernel.end + 1, p->addr + p->length);
-		} else {
-			entry = set(entry, p->type, p->addr, p->addr + p->length);
-		}
-	}
-	return entry;
-}
-
-uint32_t read_mmap(struct extra_mmap_entry *memory_map, const uint32_t multiboot_info) {
-	struct multiboot_info *info = (struct multiboot_info *)(uint64_t)multiboot_info;
-	struct map_entry *map_pos = (struct map_entry*)(uint64_t)(info->mmap_addr);
-	struct extra_mmap_entry *new_map = memory_map;
-	uint32_t map_size = info->mmap_length;
-	kernel.begin = (uint64_t) text_phys_begin;
-	kernel.end = (uint64_t) bss_phys_end;
-	uint32_t cnt = 0;
-	struct extra_mmap_entry *entry = new_map;
-	struct map_entry *prev = map_pos;
-	*entry = kernel;
-	entry++;
-	while (cnt < map_size) {
-		entry = comp_last_with_kernel(entry, prev);
-		cnt += prev->size + sizeof(prev->size);
-		prev = (struct map_entry *)((char*)prev + prev->size + sizeof(prev->size));
-	}
-	uint32_t map_length = entry - new_map;
-	sort_mmap(new_map, map_length);
-	return map_length;
-}
-
-void print_mmap(struct extra_mmap_entry *memory_map, uint32_t map_length) {
-	struct extra_mmap_entry *map = memory_map; 
-	for (uint32_t i = 0; i < map_length; i++) {
-		printf("from %lx to %lx -- ", map[i].begin, map[i].end);
-		if (map[i].type == KT) {
-			printf("kernel\n");
-		} else if (map[i].type == FT) {
-			printf("free\n");
-		} else {
-			printf("reserved\n");
-		}
-	}
-}

@@ -1,31 +1,35 @@
-#ifndef __MEMMAP_H__
-#define __MEMMAP_H__
+#ifndef __MEMMAP__
 
-#include <stdint.h>
+#define __MEMMAP__
+
 #include <print.h>
-#include <multiboot.h>
+#include <memory.h>
+#include <ints.h>
+#include <print.h>
+#include <desc.h> 
 
-struct map_entry {
+struct mem_entry {
 	uint32_t size;
-	uint64_t addr;
+	uint64_t base_addr;
 	uint64_t length;
 	uint32_t type;
-} __attribute__((packed));
-
-struct extra_mmap_entry {
-	uint32_t type;
-	uint64_t begin;
-	uint64_t end;
 }__attribute__((packed));
 
-#define MAX_MMAP_LENGTH 100
-#define KT 0
-#define FT 1
-#define RT 2
+struct my_mem_entry {
+	uint64_t begin;
+	uint64_t end;
+	uint64_t length;
+	uint32_t type;
+}__attribute__((packed));
 
-void print_mmap(struct extra_mmap_entry *, uint32_t);
-void sort_mmap(struct extra_mmap_entry *, uint32_t);
-uint32_t read_mmap(struct extra_mmap_entry *, const uint32_t);
-struct extra_mmap_entry *comp_last_with_kernel(struct extra_mmap_entry *, struct map_entry *);
+typedef struct my_mem_entry my_mem_entry_t;
+typedef struct mem_entry mem_entry_t;
 
-#endif /* __MEMMAP_H__ */
+extern my_mem_entry_t memory_map[];
+extern uint64_t memory_map_size;
+
+void initialize_memory_map();
+void print_memory_map();
+
+
+#endif
